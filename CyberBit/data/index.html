@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Cyber-B1t</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: black;
+            color: white;
+            text-align: center;
+        }
+
+        .btns {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        button {
+            width: 80px;
+            height: 80px;
+            font-size: 30px;
+            background-color: rgba(72, 23, 249, 0.6);
+            border: none;
+            color: white;
+            border-radius: 10px;
+            margin: 5px;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        button:active {
+            transform: scale(1.1);
+            background-color: rgba(72, 23, 249, 0.8);
+        }
+
+        .stop {
+            background-color: rgba(249, 23, 23, 0.9);
+        }
+
+        .slider {
+            width: 150px; /* Ajuste para dispositivos móviles */
+            max-width: 350px;
+            height: 30px;
+            background-color: rgba(72, 23, 249, 0.6);
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 30px 0;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(72, 23, 249, 0.6);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cyber-B1t ControllPanel</h1>
+
+    <div class="btns"> 
+        <div class="row">
+            <button 
+                onmousedown="SendToESP('F')" 
+                onmouseup="SendToESP('S')"
+                ontouchstart="SendToESP('F')" 
+                ontouchend="SendToESP('S')"  
+                class="F">▲</button>
+        </div>
+        <div class="row">
+            <button 
+                onmousedown="SendToESP('L')" 
+                onmouseup="SendToESP('S')" 
+                ontouchstart="SendToESP('L')" 
+                ontouchend="SendToESP('S')" 
+                class="L">◀</button>
+            <button 
+                onmousedown="SendToESP('S')"
+                ontouchstart="SendToESP('S')" 
+                ontouchend="SendToESP('S')"  
+                class="stop">■</button>
+            <button 
+                onmousedown="SendToESP('R')" 
+                onmouseup="SendToESP('S')" 
+                ontouchstart="SendToESP('R')" 
+                ontouchend="SendToESP('S')" 
+                class="R">▶</button>
+        </div>
+        <div class="row">
+            <button 
+                onmousedown="SendToESP('B')" 
+                onmouseup="SendToESP('S')"
+                ontouchstart="SendToESP('B')" 
+                ontouchend="SendToESP('S')"  
+                class="B">▼</button>
+        </div>
+    </div>
+
+    <div class="slider-c">
+        <input id="servoSlider" class="slider" type="range" min="0" max="180" value="90" oninput="updateServoAngle(this.value)">
+    </div>
+
+    <script>
+        var connection = new WebSocket('ws://' + window.location.hostname + '/ws');
+
+        connection.onopen = function () {
+            console.log('WebSocket conectado');
+        };
+
+        connection.onerror = function (error) {
+            console.log('WebSocket Error ', error);
+        };
+
+        connection.onmessage = function (event) {
+            console.log('Servidor dice: ' + event.data);
+        };
+
+        function SendToESP(action) {
+            if (connection.readyState === WebSocket.OPEN) {
+                connection.send(action);
+            } else {
+                console.log('WebSocket no está conectado.');
+            }
+        }
+
+        function updateServoAngle(value) {
+            SendToESP("Servo:" + value);
+            console.log("Ángulo del servo ajustado a: " + value);
+        }
+    </script>
+</body>
+</html>
