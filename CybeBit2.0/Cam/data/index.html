@@ -36,7 +36,7 @@
             width: 80px;
             height: 80px;
             font-size: 30px;
-            background-color: rgba(72, 23, 249, 0.6);
+            background-color: rgba(51, 47, 62, 0.9);
             border: none;
             color: white;
             border-radius: 10px;
@@ -46,45 +46,121 @@
 
         button:active {
             transform: scale(1.1);
-            background-color: rgba(72, 23, 249, 0.8);
+            background-color: rgba(51, 47, 62, 0.8);
         }
 
         .stop {
-            background-color: rgba(249, 23, 23, 0.9);
+            background-color: rgba(152, 11, 11, 0.9);
+            right:40px;
+        }
+
+        img#stream {
+            transform: rotate(-90deg);
+        }
+        div#border {
+            width: 360px;
+            height: 210px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(51, 47, 62, 0.9);
+        }
+        #sideMenu {
+            position: fixed;
+            top: 0;
+            right: -200px; /* Inicialmente fuera de la vista */
+            width: 400px;
+            height: 100%;
+            background-color: rgba(51, 47, 62, 0.9);
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.3s ease;
+            transform: translateX(100%); /* Oculto */
+            z-index: 999;
+        }
+
+        #sideMenu.open {
+            transform: translateX(0); /* Menú visible */
+        }
+
+        #menuButton {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background-color: rgba(51, 47, 62, 0.9);
+            border: none;
+            color: white;
+            font-size: 20px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            z-index: 10;
+            z-index: 1000;
+        }
+
+        #menuButton:active {
+            transform: scale(1.1);
+            background-color:rgba(51, 47, 62, 0.8);
         }
 
         .slider {
-            width: 150px; /* Ajuste para dispositivos móviles */
-            max-width: 350px;
+            width: 100px; /* Ajuste para dispositivos móviles */
+            max-width: 100px;
             height: 30px;
-            background-color: rgba(72, 23, 249, 0.6);
+            background-color: rgba(152, 11, 11, 0.9);
             -webkit-appearance: none;
             appearance: none;
-            margin: 30px 0;
+            margin-top: 20px;
+            border-radius: 15%;
+            
+        }
+        .slider-c{
+            margin-right: 100px;
+            margin-top: 80px;
         }
 
         .slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             background-color: white;
             cursor: pointer;
             border-radius: 50%;
         }
-
+        .Sh {
+            position: relative;
+            right:130px;
+        }
+        .F {
+            position: relative;
+            left:45px;
+        }
         .slider::-moz-range-thumb {
-            width: 40px;
-            height: 40px;
-            background-color: rgba(72, 23, 249, 0.6);
+            width: 30px;
+            height: 30px;
+            background-color: rgba(51, 47, 62, 0.6);
             cursor: pointer;
             border-radius: 50%;
         }
     </style>
 </head>
 <body>
-    <h1>Cyber-B1t ControllPanel</h1>
-
+    <button id="menuButton" onclick="toggleMenu()">☰ Menú</button>
+    <div id="sideMenu" class="side-menu">
+        <div class="slider-c">
+            <h3>Brightness</h3>
+            <input id="servoSlider" class="slider" type="range" min="0" max="255" value="0" oninput="TurnFlash(this.value)">
+        </div>
+    </div>
+    <h1>Cyber-B1t Control Panel</h1>
+    <div id="border">
+        <img id="stream" width="200px" height="350px" alt="Streaming...">
+    </div>
     <div class="btns"> 
         <div class="row">
             <button 
@@ -93,6 +169,12 @@
                 ontouchstart="SendToESP('F')" 
                 ontouchend="SendToESP('S')"  
                 class="F">▲</button>
+            <button 
+                onmousedown="SendToESP('Sh')" 
+                onmouseup="SendToESP('S')" 
+                ontouchstart="SendToESP('Sh')" 
+                ontouchend="SendToESP('S')" 
+                class="Sh">⚡</button>
         </div>
         <div class="row">
             <button 
@@ -101,7 +183,7 @@
                 ontouchstart="SendToESP('L')" 
                 ontouchend="SendToESP('S')" 
                 class="L">◀</button>
-            <button 
+            <button
                 onmousedown="SendToESP('S')"
                 ontouchstart="SendToESP('S')" 
                 ontouchend="SendToESP('S')"  
@@ -122,14 +204,12 @@
                 class="B">▼</button>
         </div>
     </div>
-
-    <div class="slider-c">
-        <input id="servoSlider" class="slider" type="range" min="0" max="180" value="90" oninput="updateServoAngle(this.value)">
-    </div>
-
     <script>
         var connection = new WebSocket('ws://' + window.location.hostname + '/ws');
+        const streamImage = document.getElementById("stream");
+        const ws = new WebSocket(`ws://${location.hostname}/ws`);
 
+        ws.binaryType = "arraybuffer";
         connection.onopen = function () {
             console.log('WebSocket conectado');
         };
@@ -140,6 +220,8 @@
 
         connection.onmessage = function (event) {
             console.log('Servidor dice: ' + event.data);
+            const blob = new Blob([event.data], { type: 'image/jpeg' });
+            streamImage.src = URL.createObjectURL(blob); 
         };
 
         function SendToESP(action) {
@@ -150,9 +232,13 @@
             }
         }
 
-        function updateServoAngle(value) {
-            SendToESP("Servo:" + value);
-            console.log("Ángulo del servo ajustado a: " + value);
+        function TurnFlash(value) {
+            SendToESP("Flash:" + value);
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById("sideMenu");
+            menu.classList.toggle("open");
         }
     </script>
 </body>
